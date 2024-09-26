@@ -1,10 +1,19 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 Created on Thu Feb  8 10:47:57 2024
 
 @author: Jason Welsh
 
 History of Modifications
+09/26/2024   Oaklin Keefe             
+             Streamlined code for determining wavelength based on VIS or UV, or
+             another user-specific use-case.
+             Updated background subtraction section to run model_bkgnd function
+             on the entire frame.
+
+             
 06/12/2024   Houria Madani
              Added saving of the city variable to a netCDF file
              or a csv file if desired.
@@ -18,7 +27,7 @@ History of Modifications
 import matplotlib.pyplot as plt
 from despeckle import despeckle
 from destreak import destreak
-from model_bkgnd import model_bkgnd  
+from model_bkgnd import model_bkgnd 
 import numpy as np
 from netCDF4 import Dataset
 from datetime import datetime
@@ -37,10 +46,18 @@ save_to_netcdf = False
 save_to_csv = False
 
 # 'wvla' and 'wvlb' are used in the variable names to access the appropriate variables for VIS or UV
+# The user can specify their own values depending on their use-case (e.g. VIS, UV, moonlight, etc.)
 # this case here is for VIS
 # for UV use wvla = 290 and wvlb = 490
-wvla = 540
-wvlb = 740
+VIS_case = True
+if VIS_case == True:
+    UV_case= False
+    wvla = 540
+    wvlb = 740
+else:
+    UV_case = True
+    wvla = 290
+    wvlb = 490
 
 # frame clean up configuration
 nsig = 10   # number of MAD filter sigmas to find hot pixels
@@ -103,7 +120,7 @@ print("Find persistently hot pixels")
 hot_pix = np.zeros((num_spatial_samples, num_lambdas))
 for n in range(num_mirror_steps):
     frame = rad[n, :, :]
-    _, sf2 = despeckle(frame,arg3=nsig)
+    _, sf2 = despeckle(frame,None, nsig)
     hot_pix = hot_pix + sf2
     
 print("Clean up the radiance")
@@ -127,15 +144,14 @@ for j in range(num_mirror_steps):
     frame[0:5, :] = np.nan
     frame[2042:, :] = np.nan
     
-    # Background Subtraction
-    for n in range(frame.shape[1]):
-        # Model top of the focal plane
-        frame[0:1025, n] = model_bkgnd(frame[0:1025, n],degree,nsig3)
-        # Model bottom of the focal plane
-        frame[1024:2048, n] = model_bkgnd(frame[1024:2048, n],degree,nsig3)
+    # Background Subtraction 
+    bkgnd_deg = 3  
+    bkgnd_step = 1 
+    signal, bkgnd, p = model_bkgnd(frame, qf0, bkgnd_deg, bkgnd_step, nsig3)
         
     # Save the cleaned up frame in the rad variable
-    rad[j, :, :] = frame
+    rad[j, :, :] = signal
+
 
 end_time1 = time.time()
 elapsed_time1 = (end_time1 - start_time)/60
@@ -144,8 +160,15 @@ print("Elapsed time1:", elapsed_time1, "minutes")
 
 # Wavelength range for numerical integration
 # This is for the VIS case; for the UV case use 290 to 490
-wvl1 = 540
-wvl2 = 640
+# Here, we make the UV case use 390-490 to match the correspoinding MATLAB code
+if VIS_case == True:
+    UV_case= False
+    wvl1 = 540
+    wvl2 = 640
+else:
+    UV_case = True
+    wvl1 = 390
+    wvl2 = 490
 
 # Use the cleaned up radiance from the previous processing and 
 # read the nominal wavelengths from the input netCDF file
@@ -203,6 +226,7 @@ city=city*1e9
 
 #Plot out a colormap of the city processed data variable        
 plt.pcolor(city,vmin=0, vmax=100,cmap='viridis');plt.colorbar()
+
 
 # Save to csv file if desired
 if save_to_csv:
@@ -267,4 +291,3 @@ if save_to_netcdf:
 end_time = time.time()
 elapsed_time = (end_time - start_time)/60
 print("Elapsed time:", elapsed_time, "minutes")
-
