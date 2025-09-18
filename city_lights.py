@@ -22,6 +22,10 @@ History of Modifications
              Changed the numerical integration to use trapz
              This sped up the script and it now takes less than minutes to run 
              one granule of 101 frames instead of 50 minutes.
+
+09/18/2025   Houria Madani
+             Replaced trapz by trapezoid because the trapz function has been 
+             removed in SciPy 1.14 and replaced by trapezoid            
 """
 #Import the necessary libraries into python
 import matplotlib.pyplot as plt
@@ -34,7 +38,7 @@ from datetime import datetime
 import os
 import glob
 import time
-from scipy.integrate import trapz
+from scipy.integrate import trapezoid
 import numpy.ma as ma
 import pandas as pd
 
@@ -220,7 +224,7 @@ lam4=lam2[wvl_start:wvl_stop]
  # Loop over the number of mirror steps (i.e. frames)
 for n in range(num_mirror_steps):     
     # Trapezoidal numerical integration over wavelengths
-    city[:,n] = trapz(rad[n, :, wvl_start:wvl_stop],lam4)
+    city[:,n] = trapezoid(rad[n, :, wvl_start:wvl_stop],lam4)
 # Convert to nanowatts
 city=city*1e9
 
