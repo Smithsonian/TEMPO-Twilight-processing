@@ -3,3 +3,5 @@ This repository contains python code to post-process twilight scans (TEMPO RADT 
 Carr Astronautics.
 
 James L. Carr, Heesung Chong, Xiong Liu, John C. Houck, Virginia L. Kalb, Houria Madani, Dong L. Wu et al. (2025). TEMPO at Night. *Earth and Space Science*
+
+For Matlab code for post-processing twilight scans (TEMPO RADT) see https://github.com/Smithsonian/TEMPO-MATLAB-processing
